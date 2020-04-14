@@ -61,10 +61,7 @@ the boot partition).
 
 Other fastboot commands work normally.
 
-## Building
-```
-$ make TOOLCHAIN_PREFIX=arm-none-eabi- msm8916-secondary
-```
+## Build From Source
 
 **Requirements:**
 - ARM (32 bit) GCC tool chain
@@ -72,6 +69,11 @@ $ make TOOLCHAIN_PREFIX=arm-none-eabi- msm8916-secondary
 - [Device Tree Compiler](https://git.kernel.org/pub/scm/utils/dtc/dtc.git)
   - Arch Linux: `dtc`
   - Debian: `device-tree-compiler` (/usr/bin/dtc) and `libfdt-dev` are required
+
+## Building
+```
+$ make TOOLCHAIN_PREFIX=arm-none-eabi- msm8916-secondary
+```
 
 Replace `TOOLCHAIN_PREFIX` with the path to your tool chain.
 `lk2nd.img` is built and placed into `build-msm8916-secondary/lk2nd.img`.
