@@ -80,6 +80,8 @@ Replace `TOOLCHAIN_PREFIX` with the path to your tool chain.
 ### To other MSM8916 devices
 - Add a simple device tree to `dts/`. You just need `model` and the
   `qcom,msm-id`/`qcom,board-id` from downstream.
+- Add an entry for the resulting dtb file in dts/rules.mk
+  make/build.mk automatically collects all *.dts in dts
 
 ### To other SoCs
 - Cherry-pick changes
