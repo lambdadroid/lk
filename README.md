@@ -71,6 +71,7 @@ $ make TOOLCHAIN_PREFIX=arm-none-eabi- msm8916-secondary
   - Arch Linux: `arm-none-eabi-gcc`
 - [Device Tree Compiler](https://git.kernel.org/pub/scm/utils/dtc/dtc.git)
   - Arch Linux: `dtc`
+  - Debian: `device-tree-compiler` (/usr/bin/dtc) and `libfdt-dev` are required
 
 Replace `TOOLCHAIN_PREFIX` with the path to your tool chain.
 `lk2nd.img` is built and placed into `build-msm8916-secondary/lk2nd.img`.
