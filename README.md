@@ -78,6 +78,8 @@ $ make TOOLCHAIN_PREFIX=arm-none-eabi- msm8916-secondary
 Replace `TOOLCHAIN_PREFIX` with the path to your tool chain.
 `lk2nd.img` is built and placed into `build-msm8916-secondary/lk2nd.img`.
 
+lk2nd.img will should then be available at `build-msm8916-secondary/lk2nd.img`.
+
 ## Porting
 ### To other MSM8916 devices
 - Add a simple device tree to `dts/`. You just need `model` and the
