@@ -87,6 +87,28 @@ lk2nd.img will should then be available at `build-msm8916-secondary/lk2nd.img`.
 - Add an entry for the resulting dtb file in dts/rules.mk
   make/build.mk automatically collects all *.dts in dts
 
+For example, Motorola Harpia:
+
+Start with a downstream kernel for the device: https://github.com/LineageOS/android_kernel_motorola_msm8916
+Look in this directory:  arch/arm/boot/dts/qcom/
+Look through all dts files which have your device name in them, such as:
+https://github.com/LineageOS/android_kernel_motorola_msm8916/blob/lineage-17.1/arch/arm/boot/dts/qcom/msm8916-harpia-p0.dts
+
+Note down any `qcom,board-id = <something>;` lines.
+
+In separate files we find:
+
+```
+qcom,board-id = <0x4D 0x8000>;
+qcom,board-id = <0x4D 0x80A0>;
+qcom,board-id = <0x4D 0x8100>;
+qcom,board-id = <0x4D 0x81A0>;
+qcom,board-id = <0x4D 0x81AD>;
+qcom,board-id = <0x4D 0x81B0>, <0x4E 0x81B0>;
+```
+
+Then add to the appropriate dts file in lk2nd: dts/msm8916-motorola-harpia.dts in this case.
+
 ### To other SoCs
 - Cherry-pick changes
 - Make some changes
