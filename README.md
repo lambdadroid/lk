@@ -61,24 +61,53 @@ the boot partition).
 
 Other fastboot commands work normally.
 
-## Building
-```
-$ make TOOLCHAIN_PREFIX=arm-none-eabi- msm8916-secondary
-```
+## Build From Source
 
 **Requirements:**
 - ARM (32 bit) GCC tool chain
   - Arch Linux: `arm-none-eabi-gcc`
 - [Device Tree Compiler](https://git.kernel.org/pub/scm/utils/dtc/dtc.git)
   - Arch Linux: `dtc`
+  - Debian: `device-tree-compiler` (/usr/bin/dtc) and `libfdt-dev` are required
+
+## Building
+```
+$ make TOOLCHAIN_PREFIX=arm-none-eabi- msm8916-secondary
+```
 
 Replace `TOOLCHAIN_PREFIX` with the path to your tool chain.
 `lk2nd.img` is built and placed into `build-msm8916-secondary/lk2nd.img`.
+
+lk2nd.img will should then be available at `build-msm8916-secondary/lk2nd.img`.
 
 ## Porting
 ### To other MSM8916 devices
 - Add a simple device tree to `dts/`. You just need `model` and the
   `qcom,msm-id`/`qcom,board-id` from downstream.
+- Add an entry for the resulting dtb file in dts/rules.mk
+  make/build.mk automatically collects all *.dts in dts
+
+For example, Motorola Harpia:
+
+Start with a downstream kernel for the device: https://github.com/LineageOS/android_kernel_motorola_msm8916
+Look in this directory:  arch/arm/boot/dts/qcom/
+Look through all dts files which have your device name in them, such as:
+https://github.com/LineageOS/android_kernel_motorola_msm8916/blob/lineage-17.1/arch/arm/boot/dts/qcom/msm8916-harpia-p0.dts
+
+Note down any `qcom,board-id = <something>;` lines.
+
+In separate files we find:
+
+```
+qcom,board-id = <0x4D 0x8000>;
+qcom,board-id = <0x4D 0x80A0>;
+qcom,board-id = <0x4D 0x8100>;
+qcom,board-id = <0x4D 0x81A0>;
+qcom,board-id = <0x4D 0x81AD>;
+qcom,board-id = <0x4D 0x81B0>, <0x4E 0x81B0>;
+```
+
+Then add to the appropriate dts file in lk2nd: dts/msm8916-motorola-harpia.dts in this case.
 
 ### To other SoCs
 - Cherry-pick changes
