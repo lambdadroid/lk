@@ -8,7 +8,7 @@ platform:
 
 steps:
   - name: build
-    image: debian:buster
+    image: alpine:3.14
     commands: [./.drone.sh msm8916-secondary]
 
 trigger:
@@ -23,7 +23,7 @@ platform:
 
 steps:
   - name: build
-    image: debian:buster
+    image: alpine:3.14
     commands: [./.drone.sh msm8974-secondary]
 
 trigger:
@@ -38,7 +38,7 @@ platform:
 
 steps:
   - name: build
-    image: debian:buster
+    image: alpine:3.14
     commands: [./.drone.sh msm8226-secondary]
 
 trigger:
@@ -53,7 +53,7 @@ platform:
 
 steps:
   - name: build
-    image: debian:buster
+    image: alpine:3.14
     commands: [./.drone.sh msm8916]
 
 trigger:
@@ -68,7 +68,7 @@ platform:
 
 steps:
   - name: build
-    image: debian:buster
+    image: alpine:3.14
     commands: [./.drone.sh msm8974]
 
 trigger:
@@ -83,7 +83,7 @@ platform:
 
 steps:
   - name: build
-    image: debian:buster
+    image: alpine:3.14
     commands: [./.drone.sh msm8226]
 
 trigger:

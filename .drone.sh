@@ -3,5 +3,5 @@
 set -eux
 
 nproc && grep Mem /proc/meminfo && df -hT .
-apt-get update -qq && apt-get install -yqq gcc gcc-arm-none-eabi device-tree-compiler libfdt-dev make python3 > /dev/null
+apk add build-base dtc dtc-dev gcc-arm-none-eabi python3 tar
 make -j$(nproc) TOOLCHAIN_PREFIX=arm-none-eabi- "$1"
