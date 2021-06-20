@@ -1,0 +1,16 @@
+// SPDX-License-Identifier: GPL-2.0-only
+
+/dts-v1/;
+
+#include <skeleton.dtsi>
+#include <lk2nd.h>
+
+/ {
+	model = "Fairphone 2";
+	compatible = "fairphone,fp2", "qcom,msm8974", "lk2nd,device";
+	qcom,msm-id = <217 0x10000>, <218 0x10000>;
+	qcom,board-id = <8 0>;
+
+	lk2nd,keys =
+		<KEY_VOLUMEDOWN PM_GPIO(2) (PM_GPIO_PULL_UP_30 | GPIO_ACTIVE_LOW)>;
+};
