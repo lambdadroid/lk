@@ -1,0 +1,16 @@
+// SPDX-License-Identifier: GPL-2.0-only
+
+/dts-v1/;
+
+/include/ "skeleton.dtsi"
+
+/ {
+	model = "SONY Xperia Z1 / Z1 Compact / Z Ultra";
+	compatible = "somc,rhine", "qcom,msm8974", "lk2nd,device";
+	// thanks for giving us device-unique IDs, oh wait..
+	lk2nd,match-bootloader = "*Rhine*";
+
+	// You are ID 8, you are ID 8, EVERYBODY IS ID 8!
+	qcom,msm-id = <0 0>; /* Rhine bootloader doesn't care but dtbTool apparently does */
+	qcom,board-id = <8 0>;
+};

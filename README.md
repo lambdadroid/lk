@@ -56,6 +56,7 @@ page on the EFIDroid wiki for an exact mapping of LK targets to SoCs.
 - Samsung Galaxy Tab 4 10.1 (2015) - SM-T533
 - Samsung Galaxy Tab A 8.0 LTE (2015) - SM-T357W
 - Samsung Galaxy Tab A 9.7 WiFi (2015) - SM-T550
+- SONY Xperia Z1 / Z1 Compact / Z Ultra - rhine
 - Vodafone Smart prime 6
 - Wileyfox Swift - crackling
 - Xiaomi Mi 4i - ferrari
