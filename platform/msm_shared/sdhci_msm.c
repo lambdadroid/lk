@@ -1,4 +1,4 @@
-/* Copyright (c) 2013-2014, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2013-2015, The Linux Foundation. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -42,6 +42,7 @@
 
 
 #define MX_DRV_SUPPORTED_HS200 3
+static bool attempt_cdr_unlock;
 
 /* Known data stored in the card & read during tuning
  * process. 64 bytes for 4bit bus width & 128 bytes
@@ -143,15 +144,10 @@ static void sdhci_clear_power_ctrl_irq(struct sdhci_msm_data *data)
 void sdhci_msm_init(struct sdhci_host *host, struct sdhci_msm_data *config)
 {
 	uint32_t io_switch;
+	uint32_t caps = 0;
+	uint32_t version;
 
-	/* Disable HC mode */
-	RMWREG32((config->pwrctl_base + SDCC_MCI_HC_MODE), SDHCI_HC_START_BIT, SDHCI_HC_WIDTH, 0);
-
-	/* Core power reset */
-	RMWREG32((config->pwrctl_base + SDCC_MCI_POWER), CORE_SW_RST_START, CORE_SW_RST_WIDTH, 1);
-
-	/* Wait for the core power reset to complete*/
-	 mdelay(1);
+	REG_WRITE32(host, 0xA1C, SDCC_VENDOR_SPECIFIC_FUNC);
 
 	/* Enable sdhc mode */
 	RMWREG32((config->pwrctl_base + SDCC_MCI_HC_MODE), SDHCI_HC_START_BIT, SDHCI_HC_WIDTH, SDHCI_HC_MODE_EN);
@@ -195,6 +191,25 @@ void sdhci_msm_init(struct sdhci_host *host, struct sdhci_msm_data *config)
 
 	/* Enable pwr control interrupt */
 	writel(SDCC_HC_PWR_CTRL_INT, (config->pwrctl_base + SDCC_HC_PWRCTL_MASK_REG));
+
+	version = readl(host->msm_host->pwrctl_base + MCI_VERSION);
+
+	host->major = (version & CORE_VERSION_MAJOR_MASK) >> CORE_VERSION_MAJOR_SHIFT;
+	host->minor = (version & CORE_VERSION_MINOR_MASK);
+
+	/*
+	 * For SDCC5 the capabilities registers does not have voltage advertised
+	 * Override the values using SDCC_HC_VENDOR_SPECIFIC_CAPABILITIES0
+	 */
+	if (host->major >= 1 && host->minor != 0x11 && host->minor != 0x12)
+	{
+		caps = REG_READ32(host, SDHCI_CAPS_REG1);
+
+		if (config->slot == 0x1)
+			REG_WRITE32(host, (caps | SDHCI_1_8_VOL_MASK), SDCC_HC_VENDOR_SPECIFIC_CAPABILITIES0);
+		else
+			REG_WRITE32(host, (caps | SDHCI_3_0_VOL_MASK), SDCC_HC_VENDOR_SPECIFIC_CAPABILITIES0);
+	}
 
 	config->tuning_done = false;
 	config->calibration_done = false;
@@ -273,13 +288,35 @@ static void msm_set_dll_freq(struct sdhci_host *host)
 	REG_RMW32(host, SDCC_DLL_CONFIG_REG, SDCC_DLL_CONFIG_MCLK_START, SDCC_DLL_CONFIG_MCLK_WIDTH, reg_val);
 }
 
+static void sdhci_dll_clk_enable(struct sdhci_host *host, int enable)
+{
+	if (enable)
+	{
+		REG_WRITE32(host, (REG_READ32(host, SDCC_HC_REG_DLL_CONFIG_2) & ~SDCC_DLL_CLOCK_DISABLE), SDCC_HC_REG_DLL_CONFIG_2);
+	}
+	else
+	{
+		REG_WRITE32(host, (REG_READ32(host, SDCC_DLL_CONFIG_REG) & ~SDCC_DLL_CLK_OUT_EN), SDCC_DLL_CONFIG_REG);
+		REG_WRITE32(host, (REG_READ32(host, SDCC_HC_REG_DLL_CONFIG_2) | SDCC_DLL_CLOCK_DISABLE), SDCC_HC_REG_DLL_CONFIG_2);
+	}
+}
+
 /* Initialize DLL (Programmable Delay Line) */
 static uint32_t sdhci_msm_init_dll(struct sdhci_host *host)
 {
 	uint32_t pwr_save = 0;
 	uint32_t timeout = SDHCI_DLL_TIMEOUT;
+	uint32_t dll_cfg2;
+	uint32_t mclk_clk_freq = 0;
 
 	pwr_save = REG_READ32(host, SDCC_VENDOR_SPECIFIC_FUNC) & SDCC_DLL_PWR_SAVE_EN;
+
+	/* Dll sequence needs additional steps for sdcc core version 42 */
+	if (host->major == 1 && host->minor >= 0x42)
+	{
+		/* Disable DLL clock before configuring */
+		sdhci_dll_clk_enable(host, 0);
+	}
 
 	/* PWR SAVE to 0 */
 	if (pwr_save)
@@ -292,10 +329,33 @@ static uint32_t sdhci_msm_init_dll(struct sdhci_host *host)
 	/* Set frequency field in DLL_CONFIG */
 	msm_set_dll_freq(host);
 
+	/* Configure the mclk freq based on the current clock rate
+	 * and fll cycle count
+	 */
+	if (host->major == 1 && host->minor >= 0x42)
+	{
+		dll_cfg2 = REG_READ32(host, SDCC_HC_REG_DLL_CONFIG_2);
+		if (dll_cfg2 & SDCC_FLL_CYCLE_CNT)
+			mclk_clk_freq = (host->cur_clk_rate / TCXO_FREQ) * 8;
+		else
+			mclk_clk_freq = (host->cur_clk_rate / TCXO_FREQ) * 4;
+
+		REG_WRITE32(host, ((REG_READ32(host, SDCC_HC_REG_DLL_CONFIG_2) & ~(0xFF << 10)) | (mclk_clk_freq << 10)), SDCC_HC_REG_DLL_CONFIG_2);
+
+		udelay(5);
+	}
+
 	/* Write 0 to DLL_RST */
 	REG_WRITE32(host, (REG_READ32(host, SDCC_DLL_CONFIG_REG) & ~SDCC_DLL_RESET_EN), SDCC_DLL_CONFIG_REG);
 	/* Write 0 to DLL_PDN */
 	REG_WRITE32(host, (REG_READ32(host, SDCC_DLL_CONFIG_REG) & ~SDCC_DLL_PDN_EN), SDCC_DLL_CONFIG_REG);
+
+	/* Set the mclk clock and enable the dll clock */
+	if (host->major == 1 && host->minor >= 0x42)
+	{
+		msm_set_dll_freq(host);
+		sdhci_dll_clk_enable(host, 1);
+	}
 	/* Write 1 to DLL_EN */
 	REG_WRITE32(host, (REG_READ32(host, SDCC_DLL_CONFIG_REG) | SDCC_DLL_EN), SDCC_DLL_CONFIG_REG);
 	/* Write 1 to CLK_OUT_EN */
@@ -654,15 +714,6 @@ uint32_t sdhci_msm_execute_tuning(struct sdhci_host *host, struct mmc_card *card
 	/* In Tuning mode */
 	host->tuning_in_progress = true;
 
-	/* Calibration for CDCLP533 needed for HS400 mode */
-	if (msm_host->tuning_done && !msm_host->calibration_done && host->timing == MMC_HS400_TIMING)
-	{
-		ret = sdhci_msm_hs400_calibration(host);
-		if (!ret)
-			msm_host->calibration_done = true;
-		goto out;
-	}
-
 	if (bus_width == DATA_BUS_WIDTH_8BIT)
 	{
 		tuning_block = tuning_block_128;
@@ -678,26 +729,34 @@ uint32_t sdhci_msm_execute_tuning(struct sdhci_host *host, struct mmc_card *card
 
 	ASSERT(tuning_data);
 
+	/* Calibration for CDCLP533 needed for HS400 mode */
+	if (msm_host->tuning_done && !msm_host->calibration_done && host->timing == MMC_HS400_TIMING)
+	{
+		ret = sdhci_msm_hs400_calibration(host);
+		if (!ret)
+			msm_host->calibration_done = true;
+		goto out;
+	}
+
 	/* Reset & Initialize the DLL block */
 	if (sdhci_msm_init_dll(host))
 	{
 			ret = 1;
-			goto free;
+			goto out;
 	}
 
 retry_tuning:
 	tuned_phase_cnt = 0;
 	phase = 0;
+	struct mmc_command cmd = {0};
 
 	while (phase < MAX_PHASES)
 	{
-		struct mmc_command cmd = {0};
-
 		/* configure dll to set phase delay */
 		if (sdhci_msm_config_dll(host, phase))
 		{
 			ret = 1;
-			goto free;
+			goto out;
 		}
 
 		cmd.cmd_index = CMD21_SEND_TUNING_BLOCK;
@@ -736,6 +795,12 @@ retry_tuning:
 	if (drv_type_changed)
 		mmc_set_drv_type(host, card, 0);
 
+	if (tuned_phase_cnt == MAX_PHASES)
+	{
+		attempt_cdr_unlock = true;
+		dprintf(CRITICAL, "WARNING: All phase passed.The selected phase may not be optimal\n");
+	}
+
 	/* Find the appropriate tuned phase */
 	if (tuned_phase_cnt)
 	{
@@ -751,7 +816,7 @@ retry_tuning:
 		{
 			dprintf(CRITICAL, "Failed in selecting the tuning phase\n");
 			ret = 1;
-			goto free;
+			goto out;
 		}
 
 		phase = (uint32_t) ret;
@@ -760,7 +825,7 @@ retry_tuning:
 		DBG("\n: %s: Tuned Phase: 0x%08x\n", __func__, phase);
 
 		if (sdhci_msm_config_dll(host, phase))
-			goto free;
+			goto out;
 
 		/* Save the tuned phase */
 		host->msm_host->saved_phase = phase;
@@ -771,9 +836,30 @@ retry_tuning:
 		ret = 1;
 	}
 
-free:
-	free(tuning_data);
 out:
+	/* If all the tuning phases passed, send CMD21 after enabling
+	 * CDR to make sure right tuning phase is selected by CDR
+	 */
+	if (attempt_cdr_unlock)
+	{
+		cmd.cmd_index = CMD21_SEND_TUNING_BLOCK;
+		cmd.argument = 0x0;
+		cmd.cmd_type = SDHCI_CMD_TYPE_NORMAL;
+		cmd.resp_type = SDHCI_CMD_RESP_R1;
+		cmd.trans_mode = SDHCI_MMC_READ;
+		cmd.data_present = 0x1;
+		cmd.data.data_ptr = tuning_data;
+		cmd.data.blk_sz = size;
+		cmd.data.num_blocks = 0x1;
+
+		/* send command */
+		if (!sdhci_send_command(host, &cmd))
+		{
+			DBG("\n: %s: Sending CMD21 after CDR enable with default phases fail\n", __func__);
+		}
+	}
+
+	free(tuning_data);
 	/* Tuning done */
 	host->tuning_in_progress = false;
 	host->msm_host->tuning_done = true;

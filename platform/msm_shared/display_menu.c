@@ -41,7 +41,7 @@
 #include <sys/types.h>
 #include <../../../app/aboot/devinfo.h>
 #include <lk2nd.h>
-#if TARGET_MSM8916
+#if TARGET_MSM8916 || TARGET_MSM8994
 #include "psci.h"
 #endif
 
@@ -365,7 +365,7 @@ void display_bootverify_option_menu_renew(struct select_msg_info *msg_info)
 
 static void display_fastboot_menu_print_fw_info(char *msg, size_t msg_size)
 {
-#if TARGET_MSM8916
+#if TARGET_MSM8916 || TARGET_MSM8994
 	bool armv8 = is_scm_armv8_support();
 	scmcall_arg arg = {0};
 	uint32_t psci_version = PSCI_RET_NOT_SUPPORTED;

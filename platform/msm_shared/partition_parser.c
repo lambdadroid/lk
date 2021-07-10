@@ -140,7 +140,7 @@ static void partition_split(uint32_t block_size, const char *base_name,
 static void partition_split_boot(uint32_t block_size)
 {
 	partition_split(block_size, "boot", "lk2nd", LK2ND_SIZE / block_size, false);
-#if TARGET_MSM8916
+#if TARGET_MSM8916 || TARGET_MSM8994
 	partition_split(block_size, "lk2nd", "qhypstub", 4096 / block_size, true);
 #endif
 }

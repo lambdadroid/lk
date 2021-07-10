@@ -464,7 +464,10 @@ DEFINES += DISPLAY_TYPE_MDSS=1
 			$(LOCAL_DIR)/mipi_dsi.o \
 			$(LOCAL_DIR)/mipi_dsi_phy.o \
 			$(LOCAL_DIR)/mipi_dsi_autopll.o \
-			$(LOCAL_DIR)/mipi_dsi_autopll_20nm.o
+			$(LOCAL_DIR)/mipi_dsi_autopll_20nm.o \
+			$(LOCAL_DIR)/i2c_qup.o \
+			$(LOCAL_DIR)/shutdown_detect.o \
+			$(LOCAL_DIR)/dload_util.o
 endif
 
 ifeq ($(PLATFORM),msm8909)

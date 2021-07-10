@@ -1,4 +1,4 @@
-/* Copyright (c) 2013-2014, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2013-2015, The Linux Foundation. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -75,7 +75,9 @@
 #define SDCC_DLL_EN                               BIT(16)
 #define SDCC_DLL_CDR_EN                           BIT(17)
 #define SDCC_DLL_CLK_OUT_EN                       BIT(18)
+#define SDCC_FLL_CYCLE_CNT                        BIT(18)
 #define SDCC_DLL_CDR_EXT_EN                       BIT(19)
+#define SDCC_DLL_CLOCK_DISABLE                    BIT(21)
 #define SDCC_DLL_PDN_EN                           BIT(29)
 #define SDCC_DLL_RESET_EN                         BIT(30)
 #define SDCC_DLL_CONFIG_MCLK_START                0x18
@@ -120,6 +122,10 @@
 
 #define HC_IO_PAD_PWR_SWITCH_EN                   BIT(15)
 #define HC_IO_PAD_PWR_SWITCH                      BIT(16)
+
+#define SDCC_HC_VENDOR_SPECIFIC_CAPABILITIES0     0x11C
+
+#define TCXO_FREQ                                 19200000
 
 struct sdhci_msm_data
 {
